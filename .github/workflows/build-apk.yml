@@ -22,16 +22,17 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Dependencies & Capacitor Android
-        run: |
-          npm install
-          npx @capacitor/cli update android
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Update Capacitor Android
+        run: npx @capacitor/cli update android
 
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
