@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroDrop ⚡ - Next-Gen File & Resource Sharing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                            950: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.2; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .radar-pulse {
+            animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-bolt-lightning text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">AeroDrop</h1>
+                    <p class="text-xs text-slate-400">Superior P2P Sharing • Local & Cloud Hybrid</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Status Badge -->
+                <div class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Local Node Active (5GHz Wi-Fi)</span>
+                </div>
+
+                <!-- My Device Profile -->
+                <button onclick="openDeviceSettings()" class="flex items-center space-x-2 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-laptop"></i>
+                    </div>
+                    <span class="text-sm font-medium text-slate-200 hidden md:inline">My MacBook Pro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Modular Navigation & Active State -->
+        <div class="lg:col-span-4 space-y-6">
+            <!-- Modular Tab Selector -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-2 shadow-xl backdrop-blur-md">
+                <nav class="space-y-1" aria-label="Tabs">
+                    <button onclick="switchTab('transfer')" id="tab-btn-transfer" class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-semibold rounded-xl transition bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                        <i class="fa-solid fa-share-nodes w-5"></i>
+                        <span class="flex-1 text-left">File & Folder Transfer</span>
+                        <span class="px-2 py-0.5 text-xs bg-indigo-500/50 rounded-full">Active</span>
+                    </button>
+                    <button onclick="switchTab('clipboard')" id="tab-btn-clipboard" class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/60">
+                        <i class="fa-solid fa-clipboard w-5"></i>
+                        <span class="flex-1 text-left">Clipboard Sync</span>
+                        <span class="px-2 py-0.5 text-xs bg-slate-800 text-slate-400 rounded-full">New</span>
+                    </button>
+                    <button onclick="switchTab('fallback')" id="tab-btn-fallback" class="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/60">
+                        <i class="fa-solid fa-globe w-5"></i>
+                        <span class="flex-1 text-left">Web Link Fallback</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Active Transfers Widget -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm text-slate-200 flex items-center space-x-2">
+                        <i class="fa-solid fa-arrows-rotate text-indigo-400"></i>
+                        <span>Active Transfers</span>
+                    </h3>
+                    <span id="transfer-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-indigo-400 font-mono">0 active</span>
+                </div>
+                
+                <div id="transfers-list" class="space-y-3 max-h-[320px] overflow-y-auto pr-1">
+                    <div class="text-center py-8 text-slate-500 text-sm">
+                        <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                        No transfers in progress
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Dynamic Module Views -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- MODULE 1: FILE TRANSFER VIEW -->
+            <div id="module-transfer" class="space-y-6">
+                
+                <!-- Nearby Devices Radar Section -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-16 -top-16 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-radar text-indigo-400 animate-spin" style="animation-duration: 8s;"></i>
+                                <span>Nearby Devices Radar</span>
+                            </h2>
+                            <p class="text-xs text-slate-400">Select a target device to beam files instantly via direct Wi-Fi P2P</p>
+                        </div>
+                        <button onclick="refreshDevices()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Scan</span>
+                        </button>
+                    </div>
+
+                    <!-- Devices Grid -->
+                    <div id="device-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <!-- Populated via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Drag & Drop File Zone -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-lg font-bold text-white mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-indigo-400"></i>
+                        <span>Select or Drop Files</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-6">Support for images, archives, code files, and large media streams without size restrictions.</p>
+
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 bg-slate-950/50 rounded-xl p-8 text-center transition cursor-pointer flex flex-col items-center justify-center space-y-3">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200">Drag & drop files here, or <span class="text-indigo-400 hover:underline">browse</span></p>
+                            <p class="text-xs text-slate-500 mt-1">Any file format • End-to-end encrypted</p>
+                        </div>
+                        <input type="file" id="file-input" class="hidden" multiple>
+                    </div>
+
+                    <!-- Selected Files Queue Preview -->
+                    <div id="file-queue-container" class="mt-6 hidden space-y-3">
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <span>Queued Payload (<span id="queue-count">0</span>)</span>
+                            <button onclick="clearQueue()" class="text-rose-400 hover:text-rose-300">Clear All</button>
+                        </div>
+                        <div id="file-queue-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+
+                        <!-- Target Recipient Reminder & Send Button -->
+                        <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
+                            <div class="flex items-center space-x-2 text-xs text-slate-300">
+                                <span class="text-slate-500">Target:</span>
+                                <span id="selected-target-badge" class="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-semibold">No device selected</span>
+                            </div>
+                            <button onclick="startTransfer()" id="send-btn" disabled class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Send Files</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- MODULE 2: CLIPBOARD SYNC VIEW -->
+            <div id="module-clipboard" class="hidden space-y-6">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                                <i class="fa-solid fa-clipboard text-indigo-400"></i>
+                               <span>Cross-Device Clipboard Sync</span>
+                            </h2>
+                            <p class="text-xs text-slate-400">Instantly copy text, code snippets, or links and broadcast them to connected peers.</p>
+                        </div>
+                        <button onclick="clearClipboardHistory()" class="text-xs text-slate-400 hover:text-rose-400 transition">Clear History</button>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="space-y-3">
+                        <textarea id="clipboard-input" rows="3" placeholder="Type or paste text here to broadcast to nearby devices..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition resize-none"></textarea>
+                        <div class="flex justify-end">
+                            <button onclick="broadcastClipboard()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center space-x-2">
+                                <i class="fa-solid fa-wifi"></i>
+                                <span>Broadcast Text</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clipboard History Stream -->
+                    <div class="mt-8 space-y-3">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Recent Clipboard Streams</h3>
+                        <div id="clipboard-history" class="space-y-3">
+                            <!-- Items populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE 3: WEB LINK FALLBACK VIEW -->
+            <div id="module-fallback" class="hidden space-y-6">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                            <i class="fa-solid fa-globe text-indigo-400"></i>
+                            <span>Web Link Fallback (Non-App Users)</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Generate a temporary, secure WebRTC tunnel link so anyone without AeroDrop installed can download files straight from their browser.</p>
+                    </div>
+
+                    <!-- Link Generator Box -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center space-y-4">
+                        <div id="link-generator-state" class="space-y-4">
+                            <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl">
+                                <i class="fa-solid fa-link"></i>
+                            </div>
+                            <p class="text-sm text-slate-300">Select files from your queue or device to generate an instant secure web share link.</p>
+                            <button onclick="generateWebLink()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 transition">
+                                Generate Temporary Secure Link
+                            </button>
+                        </div>
+
+                        <!-- Generated Link Result (Hidden by default until generated) -->
+                        <div id="link-result-state" class="hidden space-y-4">
+                            <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl p-2">
+                                <input type="text" id="generated-url" readonly value="https://aerodrop.local/share/x8k92s-secure-payload" class="w-full bg-transparent border-none text-sm text-indigo-300 px-3 focus:outline-none font-mono">
+                                <button onclick="copyGeneratedLink()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition shrink-0">
+                                    Copy Link
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-center space-x-4 text-xs text-slate-400">
+                                <span><i class="fa-solid fa-clock mr-1"></i> Expires in 24 hours</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-shield-halved mr-1"></i> End-to-End Encrypted</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Device Settings Modal (Hidden by default) -->
+    <div id="device-settings-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Device Settings</h3>
+                <button onclick="closeDeviceSettings()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Device Name</label>
+                    <input type="text" id="settings-device-name" value="MacBook Pro" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Network Discovery Mode</label>
+                    <select class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <option>Public (Discoverable by anyone)</option>
+                        <option>Trusted Devices Only</option>
+                        <option>Hidden Mode</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="closeDeviceSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition">Cancel</button>
+                <button onclick="saveDeviceSettings()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Core -->
+    <script>
+        // --- Application State ---
+        let state = {
+            activeTab: 'transfer',
+            selectedTarget: null,
+            queuedFiles: [],
+            activeTransfers: [],
+            clipboardHistory: [
+                { id: 1, text: 'https://github.com/aerodrop/core-v2', time: '2 mins ago', device: 'Pixel 8' },
+                { id: 2, text: 'npm install @aerodrop/p2p-engine', time: '15 mins ago', device: 'Windows PC' }
+            ],
+            devices: [
+                { id: 'dev-1', name: 'Pixel 8 Pro', type: 'phone', ip: '192.168.1.45', ping: '2ms', icon: 'fa-mobile-screen', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                { id: 'dev-2', name: 'Windows Studio PC', type: 'desktop', ip: '192.168.1.12', ping: '4ms', icon: 'fa-desktop', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+                { id: 'dev-3', name: 'iPad Air M1', type: 'tablet', ip: '192.168.1.88', ping: '1ms', icon: 'fa-tablet-screen-button', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                { id: 'dev-4', name: 'Linux Server Node', type: 'server', ip: '192.168.1.100', ping: '6ms', icon: 'fa-server', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' }
+            ]
+        };
+
+        // --- Initialization ---
+        window.onload = function() {
+            renderDevices();
+            renderClipboardHistory();
+            setupDragAndDrop();
+        };
+
+        // --- Toast Notifications ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                success: 'bg-slate-900 border-emerald-500/30 text-emerald-300',
+                error: 'bg-slate-900 border-rose-500/30 text-rose-300',
+                info: 'bg-slate-900 border-indigo-500/30 text-indigo-300'
+            };
+
+            const icons = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-circle-exclamation text-rose-400',
+                info: 'fa-circle-info text-indigo-400'
+            };
+
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl border shadow-xl backdrop-blur-md transform transition-all duration-300 translate-y-2 opacity-0 ${bgColors[type] || bgColors.success}`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type] || icons.success}"></i>
+                <span class="text-sm font-medium text-slate-200">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- Tab Navigation ---
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            
+            ['transfer', 'clipboard', 'fallback'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const mod = document.getElementById(`module-${t}`);
+                if (t === tabName) {
+                    btn.className = "w-full flex items-center space-x-3 px-4 py-3 text-sm font-semibold rounded-xl transition bg-indigo-600 text-white shadow-lg shadow-indigo-600/20";
+                    mod.classList.remove('hidden');
+                } else {
+                    btn.className = "w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition text-slate-400 hover:text-white hover:bg-slate-800/60";
+                    mod.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- Device Radar & Selection ---
+        function renderDevices() {
+            const grid = document.getElementById('device-grid');
+            grid.innerHTML = state.devices.map(dev => {
+                const isSelected = state.selectedTarget === dev.id;
+                return `
+                    <div onclick="selectDevice('${dev.id}')" class="p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between space-y-3 ${isSelected ? 'bg-indigo-600/10 border-indigo-500 shadow-lg shadow-indigo-500/10' : 'bg-slate-950/40 border-slate-800 hover:border-slate-700'}">
+                        <div class="flex items-center justify-between">
+                            <div class="w-10 h-10 rounded-xl border flex items-center justify-center text-lg ${dev.color}">
+                                <i class="fa-solid ${dev.icon}"></i>
+                            </div>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">${dev.ping}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-sm text-slate-200 truncate">${dev.name}</h4>
+                            <p class="text-xs text-slate-500 font-mono mt-0.5">${dev.ip}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectDevice(id) {
+            state.selectedTarget = id;
+            const dev = state.devices.find(d => d.id === id);
+            const badge = document.getElementById('selected-target-badge');
+            if (dev) {
+                badge.innerText = dev.name;
+                badge.className = "px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold";
+                showToast(`Target selected: ${dev.name}`, 'info');
+            }
+            renderDevices();
+            updateSendButtonState();
+        }
+
+        function refreshDevices() {
+            showToast("Scanning local Wi-Fi subnet for peers...", 'info');
+            setTimeout(() => {
+                showToast("Radar scan complete. 4 devices active.", 'success');
+            }, 1200);
+        }
+
+        // --- Drag & Drop / File Queue ---
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            dropZone.onclick = () => fileInput.click();
+
+            fileInput.onchange = (e) => {
+                handleFiles(e.target.files);
+            };
+
+            dropZone.ondragover = (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-indigo-600/5');
+            };
+
+            dropZone.ondragleave = () => {
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-600/5');
+            };
+
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-600/5');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFiles(e.dataTransfer.files);
+                }
+            };
+        }
+
+        function handleFiles(files) {
+            for (let i = 0; i < files.length; i++) {
+                state.queuedFiles.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: files[i].name,
+                    size: files[i].size,
+                    type: files[i].type || 'application/octet-stream'
+                });
+            }
+            renderFileQueue();
+            showToast(`Added ${files.length} file(s) to queue`, 'success');
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function renderFileQueue() {
+            const container = document.getElementById('file-queue-container');
+            const list = document.getElementById('file-queue-list');
+            const count = document.getElementById('queue-count');
+
+            if (state.queuedFiles.length > 0) {
+                container.classList.remove('hidden');
+                count.innerText = state.queuedFiles.length;
+                list.innerHTML = state.queuedFiles.map(file => `
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800">
+                        <div class="flex items-center space-x-3 truncate">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-sm shrink-0">
+                                <i class="fa-solid fa-file"></i>
+                            </div>
+                            <div class="truncate">
+                                <p class="text-xs font-semibold text-slate-200 truncate">${file.name}</p>
+                                <p class="text-[10px] text-slate-500 font-mono">${formatBytes(file.size)}</p>
+                            </div>
+                        </div>
+                        <button onclick="removeQueuedFile('${file.id}')" class="text-slate-500 hover:text-rose-400 p-1">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                container.classList.add('hidden');
+            }
+            updateSendButtonState();
+        }
+
+        function removeQueuedFile(id) {
+            state.queuedFiles = state.queuedFiles.filter(f => f.id !== id);
+            renderFileQueue();
+        }
+
+        function clearQueue() {
+            state.queuedFiles = [];
+            renderFileQueue();
+            showToast("Queue cleared", 'info');
+        }
+
+        function updateSendButtonState() {
+            const sendBtn = document.getElementById('send-btn');
+            if (state.selectedTarget && state.queuedFiles.length > 0) {
+                sendBtn.removeAttribute('disabled');
+            } else {
+                sendBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // --- Active Transfers & Simulation ---
+        function startTransfer() {
+            if (!state.selectedTarget || state.queuedFiles.length === 0) return;
+
+            const targetDevice = state.devices.find(d => d.id === state.selectedTarget);
+            const transferId = 'tx-' + Math.random().toString(36).substring(2, 7);
+            
+            const newTransfer = {
+                id: transferId,
+                targetName: targetDevice.name,
+                filesCount: state.queuedFiles.length,
+                progress: 0,
+                speed: '45.2 MB/s',
+                status: 'transferring'
+            };
+
+            state.activeTransfers.unshift(newTransfer);
+            state.queuedFiles = []; // Reset queue
+            renderFileQueue();
+            renderActiveTransfers();
+            showToast(`Started transfer to ${targetDevice.name}`, 'success');
+
+            // Simulate progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 15) + 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    newTransfer.status = 'completed';
+                    newTransfer.progress = 100;
+                    clearInterval(interval);
+                    showToast(`Successfully transferred files to ${targetDevice.name}!`, 'success');
+                    renderActiveTransfers();
+                } else {
+                    newTransfer.progress = progress;
+                    renderActiveTransfers();
+                }
+            }, 600);
+        }
+
+        function renderActiveTransfers() {
+            const list = document.getElementById('transfers-list');
+            const count = document.getElementById('transfer-count');
+            
+            count.innerText = `${state.activeTransfers.filter(t => t.status === 'transferring').length} active`;
+
+            if (state.activeTransfers.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-8 text-slate-500 text-sm">
+                        <i class="fa-regular fa-folder-open text-2xl mb-2 block"></i>
+                        No transfers in progress
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = state.activeTransfers.map(tx => `
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-slate-200">To: ${tx.targetName}</span>
+                        <span class="${tx.status === 'completed' ? 'text-emerald-400' : 'text-indigo-400 font-mono'}">${tx.status === 'completed' ? 'Completed ⚡' : tx.speed}</span>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                            <span>${tx.filesCount} file(s)</span>
+                            <span>${tx.progress}%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full transition-all duration-300" style="width: ${tx.progress}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- Clipboard Sync Logic ---
+        function broadcastClipboard() {
+            const input = document.getElementById('clipboard-input');
+            const text = input.value.trim();
+            if (!text) {
+                showToast("Please enter some text to broadcast", 'error');
+                return;
+            }
+
+            state.clipboardHistory.unshift({
+                id: Date.now(),
+                text: text,
+                time: 'Just now',
+                device: 'This Device'
+            });
+
+            input.value = '';
+            renderClipboardHistory();
+            showToast("Clipboard text broadcasted to all peers!", 'success');
+        }
+
+        function renderClipboardHistory() {
+            const container = document.getElementById('clipboard-history');
+            container.innerHTML = state.clipboardHistory.map(item => `
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-start justify-between space-x-4">
+                    <div class="space-y-1 truncate">
+                        <p class="text-xs text-slate-200 font-mono bg-slate-900 p-2.5 rounded-lg border border-slate-800 truncate">${item.text}</p>
+                        <div class="flex items-center space-x-2 text-[10px] text-slate-500">
+                            <span><i class="fa-solid fa-laptop mr-1"></i> ${item.device}</span>
+                            <span>•</span>
+                            <span>${item.time}</span>
+                        </div>
+                    </div>
+                    <button onclick="copyToClipboard('${item.text.replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition shrink-0">
+                        Copy
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function copyToClipboard(text) {
+            document.addEventListener('copy', function(e) {
+                e.clipboardData.setData('text/plain', text);
+                e.preventDefault();
+            }, { once: true });
+            document.execCommand('copy');
+            showToast("Copied to clipboard successfully!", 'success');
+        }
+
+        function clearClipboardHistory() {
+            state.clipboardHistory = [];
+            renderClipboardHistory();
+            showToast("Clipboard history cleared", 'info');
+        }
+
+        // --- Web Link Fallback Logic ---
+        function generateWebLink() {
+            const generatorState = document.getElementById('link-generator-state');
+            const resultState = document.getElementById('link-result-state');
+            
+            generatorState.classList.add('hidden');
+            resultState.classList.remove('hidden');
+            showToast("Secure WebRTC tunnel link generated!", 'success');
+        }
+
+        function copyGeneratedLink() {
+            const urlInput = document.getElementById('generated-url');
+            copyToClipboard(urlInput.value);
+        }
+
+        // --- Device Settings Modal ---
+        function openDeviceSettings() {
+            document.getElementById('device-settings-modal').classList.remove('hidden');
+            document.getElementById('device-settings-modal').classList.add('flex');
+        }
+
+        function closeDeviceSettings() {
+            document.getElementById('device-settings-modal').classList.remove('flex');
+            document.getElementById('device-settings-modal').classList.add('hidden');
+        }
+
+        function saveDeviceSettings() {
+            const name = document.getElementById('settings-device-name').value;
+            showToast(`Device name updated to "${name}"`, 'success');
+            closeDeviceSettings();
+        }
+    </script>
+</body>
+</html>

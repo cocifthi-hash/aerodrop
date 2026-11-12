@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AeroDrop</string>
+    <string name="title_activity_main">AeroDrop</string>
+    <string name="package_name">com.aerodrop.app</string>
+    <string name="custom_url_scheme">com.aerodrop.app</string>
+</resources>
